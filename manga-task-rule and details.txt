@@ -1,0 +1,84 @@
+Task 2: The Manga Task [Advanced]
+
+
+We are not looking for a perfect product. We want to see whether you can learn what's needed, make something that works, try things, and explain your own decisions. It's ok to take help from external resources and LLMs. Just be very clear about what you contributed.
+
+Task Description 
+
+Build a system that reads three consecutive English manga pages, extracts the story text in reading order, and says who spoke each line.
+
+The same character should keep the same name across all three pages. You do not need to know real character names: char1, tomato2, tungtungsahur, etc. are completely fine. Names can restart/change for the next sequence of pages.
+
+dataset/ contains 80 labelled development sequences and 15 unlabelled test sequences. Each sequence has three consecutive manga pages. sequences.json tells you which three images belong together. Keep all three pages from one sequence together when making your own train/validation split.
+Dataset: BYTE ML Task Data
+Rules
+
+Use open-weight models and open-source tools. Hosted AI inference APIs are strictly NOT allowed for producing training targets or test predictions.
+Do actual learning/adaptation with data: train, fine-tune, create your harness, or otherwise adapt at least one learned part of your system. A direct unmodified model call is a useful baseline, but is not enough on its own.
+Your pipeline is your choice: one model, several models, OCR plus another model, or something else.
+You may use external data or code, but properly cite it and be clear about your own contribution.
+Generate test output automatically from the supplied images. Do not manually edit it or use answers obtained for test images.
+
+You do not need panel boxes, character images, real names, text boxes or panel assignments. Those can be part of your internal pipeline if you want, but are not required outputs.
+
+What counts as text
+
+Include dialogue, internal thoughts, narration, clear spoken screams/grunts/other vocalisations, and punctuation-only speech/thought balloons such as ..., ?! or !.
+
+Leave out visual sound effects and their translated captions; unclear tiny breath/reaction text on the art; titles/logos/credits/page numbers/ads/watermarks; character intro labels; editor or scanlator notes; writing on signs/clothes/objects; and text inside letters, diaries, phone messages, news pages or other documents/interfaces.
+
+Read pages in their intended visual order. These are usually right-to-left manga, but use the panels and balloon connections when the page layout says otherwise. Keep stutters, repeats and meaningful punctuation; do not keep simple printed line wrapping.
+
+Thoughts belong to the thinking character. Use the exact label NARRATION only for narrator text.
+
+Output
+
+Submit one JSON object per sequence in a JSONL file: one object on each line.
+
+{"sequence_id":"seq_001","pages":[
+  [{"speaker":"tomato1","text":"Where are you going?"},{"speaker":"tomato2","text":"Home."}],
+  [{"speaker":"tomato1","text":"Wait for me!"}],
+  []
+]}
+
+The first, second and third lists are the first, second and third images of that sequence. Keep lines within each list in reading order. Empty list means that page has no included text. speaker is your consistent character label for that sequence, or NARRATION; text is the visible story text.
+
+dataset/development/labels.jsonl has this same format for the development sequences. dataset/sample_submission.jsonl contains the 15 test sequence IDs in the required format. Fill its empty page lists with your predictions. Check development predictions with:
+
+python dataset/score.py --references dataset/development/labels.jsonl --predictions your_predictions.jsonl --output scores.json
+
+The scorer accepts normal case/whitespace differences and does not use one harsh exact-string match. Use it as a guide, not as the only thing to optimise.
+
+The two main scores are text_order_score (how well you recovered the text in reading order) and balanced_joint_f1 (how well you recovered each speaker's text and kept their identity consistent). Both range from 0 to 1; higher is better. Character labels are checked for consistency across all three pages; they do not need to match the given labels in the development annotations.
+
+Correctly empty pages do not boost the overall text score, but invented text on an empty page loses points. The other reported metrics are diagnostics: in particular, speaker_accuracy_on_matched can look high when very little text was recovered, so do not use it alone to judge your result. The scorer helps compare experiments, it ain’t the entire selection rubric.
+
+What to Submit
+
+Your training and experimentation code, along with the relevant logs or results.
+The inference code that generated your test JSONL.
+Your test predictions in the required JSONL format.
+Your trained weights/adapters, or working download links where relevant.
+A short README explaining your approach, experiments and comparisons, what worked or failed, and what you would try next. Please write this yourself. Do NOT submit AI-generated slop.
+
+We will look at transcription, reading order and speaker consistency, but also experimentation, critical thinking, reproducibility and understanding of your own work.
+
+For Beginners
+
+If you are new to any of these concepts, these resources may help you get started. There is no single correct approach to this task. It is more about exploration and experimentation than following a fixed pipeline.
+What is a VLM?
+This should give you a basic idea of what they are and how they are used.
+Introduction to Vision Language Models: Hugging Face
+Running an open-weight VLM
+This is one example of loading and running an open-weight VLM. SmolVLM is just being used as an example here; you do not have to use it.
+SmolVLM: Hugging Face
+Trying OCR
+If you want to try OCR as part of your approach, these explain how EasyOCR works.
+How to Use EasyOCR: Roboflow
+EasyOCR and Image Preprocessing: Kevin Wood
+Loading models from Hugging Face
+If you have never loaded a model from Hugging Face before, this video shows the basic workflow. It uses text models, so the exact code for a VLM will be different.
+Getting Started with Hugging Face in 15 Minutes: AssemblyAI
+
+Best of Luck :)
+
