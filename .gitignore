@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# CPython / virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Model checkpoints / heavy weights cache
+models/*.pt
+models/*.pth
+.cache/
+~/.EasyOCR/
+
+# Outputs and logs
+outputs/
+logs/
+scores.json
+scores_baseline.json
+scores_adapted.json
+test_scores.json
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
