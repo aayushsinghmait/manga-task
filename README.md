@@ -1,10 +1,77 @@
-# The Manga Task [Advanced] — Complete ML Solution
+# The Manga Task \[Advanced\] --- My Learning Journey
 
-A complete, reproducible, and lightweight Machine Learning pipeline for **The Manga Task [Advanced]**. This solution processes 3 consecutive English manga pages per sequence, reconstructs the intended story reading order, identifies speakers consistently across all three pages, handles `NARRATION`, and generates submissions adhering strictly to the official competition schema.
+## About the project
 
----
+This project is my attempt at solving the Manga Task \[Advanced\]. The
+goal is to process three consecutive English manga pages, extract the
+text in reading order, and keep speaker labels consistent across the
+pages.
 
-## 1. System Architecture & Pipeline Overview
+I wanted to build something that actually works, but the process was not
+as straightforward as I first expected. A big part of this project was
+figuring out what I could realistically run on my own laptop and
+learning the tools needed to make it happen.
+
+## How I approached it
+
+I first tried building the solution with **n8n**. It was a useful
+starting point, but I ran into complications when I started thinking
+about the model and inference requirements. Some of the approaches I
+explored were better suited to machines with a dedicated GPU, and I do
+not have an NVIDIA GPU available on my laptop.
+
+Instead of stopping there, I started looking for a way to make the
+project work with the hardware I already had. That meant learning more
+about **Python**, understanding how the different parts of an ML
+pipeline fit together, and exploring smaller, more practical models and
+CPU-friendly tools.
+
+I had to learn as I went. I spent time understanding how data is loaded,
+how OCR can extract text from images, how reading order can be
+reconstructed, and how a model can help distinguish narration from
+dialogue. I also learned that generating output is only one part of the
+task: the output has to follow the required format, and the results need
+to be checked against the evaluation script.
+
+## What I built
+
+The current project is organised into separate parts so that I can test
+and improve them individually:
+
+-   **Dataset inspection and validation** to check the supplied files
+    and images.
+-   **Image preprocessing and OCR** to help extract text from manga
+    pages.
+-   **Reading-order logic** to arrange detected text in the intended
+    order.
+-   **Speaker-tracking logic** to keep labels consistent within a
+    three-page sequence.
+-   **A narration classifier** as the learned component in the pipeline.
+-   **Evaluation scripts** to compare the baseline with the adapted
+    version.
+-   **Submission validation** to check the generated JSONL file before
+    submission.
+
+I also kept the project scripts, configuration, outputs, model artifact,
+and logs in separate folders. This makes it easier to understand what
+each part does and to debug problems without treating the whole project
+as one large block of code.
+
+## The main challenge: working without a dedicated GPU
+
+One of the biggest lessons for me was that I could not simply choose a
+large model and expect it to run well on my laptop. My machine uses
+Intel UHD 620 integrated graphics, so I had to pay attention to memory
+use and CPU compatibility instead of assuming that CUDA or a powerful
+GPU was available.
+
+This changed the way I approached the problem. I focused on a lighter
+pipeline and on understanding each stage rather than relying on a large
+model to do everything. I learned that choosing a model is not just
+about how capable it is; it also has to fit the hardware, the task
+rules, and the time available.
+
+## System Architecture & Pipeline Overview
 
 The project is structured into modular, reusable components:
 
@@ -51,138 +118,129 @@ Manga-task/
 
 ---
 
-## 2. Hardware Suitability & Design Decisions
+## What I learned
 
-- **Target Machine Hardware**:
-  - **CPU**: Intel(R) Core(TM) i5-8250U @ 1.60GHz (4 cores, 8 logical threads)
-  - **RAM**: 16 GB DDR4
-  - **GPU**: Intel(R) UHD Graphics 620 (1 GB shared VRAM, No CUDA / No NVIDIA GPU)
-  - **OS**: Windows 64-bit
-  - **Python**: Python 3.14 (64-bit)
+This project helped me learn several things beyond just writing code:
 
-- **Why Heavy Models (VLMs / vLLM) Are Inappropriate**:
-  - Running 7B/8B parameter Vision-Language Models (e.g. Qwen2-VL, SmolVLM, LLaVA) locally requires 8–16 GB of dedicated GPU VRAM.
-  - On an Intel UHD 620 integrated GPU, large VLMs fail with out-of-memory errors or take 15–30 minutes per sequence on CPU.
-  - Commercial hosted AI APIs (OpenAI, Claude) are strictly prohibited by the competition rules.
+-   How to break a larger ML problem into smaller modules.
+-   How to work with Python scripts, dependencies, configuration files,
+    and project folders.
+-   The role of OCR in extracting text from images.
+-   Why reading order and speaker attribution are separate problems.
+-   How a learned classifier differs from hand-written rules.
+-   Why training and validation data should be split by complete
+    sequence to avoid leakage.
+-   How to compare a baseline with an adapted model using the provided
+    evaluation script.
+-   Why a valid output file does not automatically mean that the
+    predictions are accurate.
+-   How to investigate limitations instead of assuming that a tool or
+    model will work on my machine.
 
-- **Our Practical, High-Performance Solution**:
-  1. **OCR Engine**: Open-source, CPU-optimized text extraction with bounding box polygon detection.
-  2. **Reading-Order Engine**: Band-based Manga Right-to-Left (RTL) and Top-to-Bottom (TTB) spatial sorting that properly respects comic speech balloon hierarchy.
-  3. **Learned Component**: A TF-IDF n-gram and geometric classifier (`NarrationClassifier`) trained on development sequences to distinguish `NARRATION` from character dialogue.
-  4. **Speaker Tracking Engine**: Sequence-wide character identification maintaining consistent labels (`character1`, `character2`, etc.) across all 3 pages using spatial proximity and conversational turn alternation.
-  5. **Performance**: Runs in seconds per sequence on standard laptop CPU with < 1 GB RAM usage.
+I also became more comfortable reading errors, checking files, and
+improving the project step by step. I am still learning, but this
+process gave me a much clearer idea of how a practical ML workflow is
+put together.
 
----
+## Results and outputs
 
-## 3. Dataset Summary
+The project currently includes:
 
-Inspected directly from the workspace files:
-- **Total Sequences**: 95 (80 Development, 15 Test)
-- **Total Images**: 285 pages (All 285 verified present and readable)
-- **Development Labels**:
-  - 80 sequences, 240 pages, 1,753 dialogue & narration bubbles
-  - 10 empty pages (4.2%) — correctly represented as `[]`
-  - Average of 7.62 lines per non-empty page
-  - Average of 3.23 distinct named characters per sequence
+-   `outputs/baseline_dev_predictions.jsonl` --- baseline predictions on
+    development data.
+-   `outputs/adapted_dev_predictions.jsonl` --- predictions from the
+    adapted pipeline.
+-   `outputs/test_predictions.jsonl` --- generated predictions for the
+    test sequences.
+-   `models/narration_classifier.joblib` --- saved narration-classifier
+    artifact.
+-   `logs/train_metrics.json` --- recorded training metrics.
+-   `score.py` --- the supplied evaluation script.
 
----
+The existing project report records a held-out narration-classifier
+macro F1 of **0.7879**. It also records `balanced_joint_f1` improving
+from **0.3719** for the baseline to **0.4014** for the adapted pipeline.
+These figures should be treated as the project's recorded results and
+can be reproduced by running the relevant scripts.
 
-## 4. Model Training & Learned Component
+I still see this as a work in progress. Text extraction, reading order,
+and especially consistent speaker identification can be difficult in
+manga pages, so there is room to test more examples and improve the
+pipeline.
 
-Per Task Rules 6 and 17, our system adapts a genuine learned machine learning component on the development data:
-- **Data Splitting**: Complete sequence-level split (64 sequences train, 16 sequences validation). All 3 pages of any sequence stay strictly together to prevent data leakage.
-- **Features Extracted**:
-  - Sub-word and word TF-IDF n-grams (1–2 grams).
-  - Lexical indicators: sentence length, word count, exclamation marks, question marks, quotation marks, ellipsis patterns.
-  - Spatial geometry: bounding box aspect ratio, normalized width, height, and vertical position on the manga page.
-- **Classifier**: Balanced Logistic Regression with L2 regularization.
-- **Validation Performance on Held-Out Sequences (16 sequences, 317 bubbles)**:
-  - **Macro F1**: `0.7879`
-  - **Narration F1**: `0.6047`
-  - **Narration Recall**: `0.7222`
-  - **Narration Precision**: `0.5200`
-- **Model Checkpoint**: Saved to `models/narration_classifier.joblib`.
+## How to run it
 
----
+Use Windows PowerShell from the project root.
 
-## 5. Experimental Results (Official score.py)
+### 1. Install dependencies
 
-Both the baseline and the adapted pipeline were evaluated on the development sequences using the official `score.py` evaluation script:
-
-| Evaluation Metric | Baseline Pipeline | Adapted Model (Ours) | Absolute Improvement |
-| :--- | :---: | :---: | :---: |
-| **`text_order_score`** | `1.0000` | `1.0000` | `+0.0000` |
-| **`balanced_joint_f1`** | `0.3719` | **`0.4014`** | **`+0.0294`** (+7.9% relative) |
-| **`speaker_accuracy_on_matched`** | `0.5608` | **`0.5921`** | **`+0.0312`** (+5.6% relative) |
-| **`joint_f1`** | `0.5608` | **`0.5921`** | **`+0.0312`** (+5.6% relative) |
-| **`matched_token_coverage`** | `1.0000` | `1.0000` | `+0.0000` |
-
-### Key Observations:
-- **Narration Disambiguation**: The baseline mistakenly treated narration as regular character dialogue. The learned classifier accurately identifies narration blocks, directly boosting `balanced_joint_f1` and `speaker_accuracy_on_matched`.
-- **Reading Order**: The spatial reading order engine correctly recovers top-to-bottom and right-to-left balloon flow without mixing panels.
-
----
-
-## 6. Reproduction & Run Commands (Windows PowerShell)
-
-Run all steps sequentially using Windows PowerShell:
-
-### Step 1: Install Dependencies
-```powershell
+``` powershell
 pip install -r requirements.txt
 ```
 
-### Step 2: Validate Dataset Integrity
-```powershell
+### 2. Validate the dataset
+
+``` powershell
 python scripts/validate_dataset.py
 ```
 
-### Step 3: Inspect Dataset Statistics
-```powershell
+### 3. Inspect the dataset
+
+``` powershell
 python scripts/inspect_dataset.py
 ```
 
-### Step 4: Run Automated Tests
-```powershell
+### 4. Run the tests
+
+``` powershell
 python tests/test_pipeline.py
 ```
 
-### Step 5: Run Baseline Pipeline & Compute Baseline Scores
-```powershell
+### 5. Run the baseline
+
+``` powershell
 python scripts/run_baseline.py
 ```
 
-### Step 6: Train Learned Component on Development Sequences
-```powershell
+### 6. Train the learned component
+
+``` powershell
 python scripts/train.py
 ```
 
-### Step 7: Evaluate Baseline vs. Adapted Model (Official score.py)
-```powershell
+### 7. Evaluate the pipeline
+
+``` powershell
 python scripts/evaluate.py
 ```
 
-### Step 8: Generate Test Predictions for the 15 Test Sequences
-```powershell
+### 8. Generate test predictions
+
+``` powershell
 python scripts/predict.py
 ```
 
-### Step 9: Validate Final Submission Schema & Rules
-```powershell
+### 9. Validate the final output
+
+``` powershell
 python scripts/validate_submission.py --predictions outputs/test_predictions.jsonl
 ```
 
----
+Run these commands in order and check the terminal output. If a command
+fails, resolve that issue before assuming the next stage has completed
+successfully.
 
-## 7. Submission Verification
+## Final note
 
-The final test predictions are saved at:
-- `outputs/test_predictions.jsonl`
+I started this project by trying a tool that I already knew about, ran
+into limitations, and then had to learn new things to keep moving. I
+learned Python, explored different model options, worked through CPU
+constraints, and tried to understand the pipeline rather than treating
+it as a black box.
 
-Validation summary:
-- Total sequences: **15** (matching all 15 test IDs in `sample_submission.jsonl`)
-- Valid JSONL format: 1 sequence per line
-- Each sequence contains exactly 3 page lists
-- All speakers are non-empty trimmed strings (`character1`, `character2`, `NARRATION`)
-- Zero invalid control characters or empty strings
-- Fully compliant with `score.py`
+As a first-year student, I know I still have a lot to learn. But this
+project gave me practical experience with problem-solving, debugging,
+model evaluation, and making technical choices based on real
+constraints. The most valuable part for me was not just getting files
+generated; it was understanding more of what it takes to build and test
+an ML solution.
