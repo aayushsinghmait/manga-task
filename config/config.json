@@ -1,0 +1,31 @@
+{
+  "project_name": "Manga-Task-Advanced",
+  "version": "1.0.0",
+  "data": {
+    "sequences_path": "sequences.json",
+    "dev_labels_path": "development/labels.jsonl",
+    "sample_submission_path": "sample_submission.jsonl",
+    "val_split_ratio": 0.2,
+    "random_seed": 42
+  },
+  "ocr": {
+    "engine": "easyocr",
+    "languages": ["en"],
+    "min_confidence": 0.25,
+    "paragraph_grouping": true
+  },
+  "reading_order": {
+    "algorithm": "manga_rtl_ttb",
+    "column_tolerance": 0.08,
+    "vertical_band_threshold": 0.12
+  },
+  "speaker_tracking": {
+    "max_speakers_per_seq": 6,
+    "clustering_threshold": 0.35,
+    "turn_taking_weight": 0.25
+  },
+  "model": {
+    "narration_classifier_path": "models/narration_classifier.joblib",
+    "order_ranker_path": "models/order_ranker.joblib"
+  }
+}
